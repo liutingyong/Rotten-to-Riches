@@ -1,5 +1,29 @@
 import sys
+import re
+
 from playwright.sync_api import sync_playwright
+
+def capture_screenshot(page):
+    page.screenshot(path="screenshot.png", full_page=True)
+    print("Screenshot saved as screenshot.png")
+
+def save_page_text(page, selector):
+    title = page.title()
+    content = page.query_selector(selector)
+    text = (
+        content.inner_text() if content else "No requested selector found."
+    )
+    filename = create_safe_filename(title)
+
+    with open(filename, "w", encoding="utf-8") as f:
+        f.write(f"Title: {title}\n\n")
+        f.write(text)
+    print(f"Data saved as {filename}")
+
+def create_safe_filename(title):
+    safe_title = re.sub(r"[^\w\s-]", "", title).strip().replace(" ", "_")
+    return f"{safe_title}.txt"
+
 
 def run(playwright, url, take_screenshot=False):
     browser = playwright.chromium.launch()
@@ -7,8 +31,9 @@ def run(playwright, url, take_screenshot=False):
     page.goto(url)
 
     if take_screenshot:
-        page.screenshot(path="screenshot.png", full_page=True)
-        print("Screenshot saved as screenshot.png")
+        capture_screenshot(page)
+    else:
+        save_page_text(page, "body")
 
     browser.close()
 
