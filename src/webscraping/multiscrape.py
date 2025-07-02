@@ -6,8 +6,9 @@ import re
 # information (as in urls) are all stored in a csv file, should provide the path to the csv file as an argument
 # or maybe just provide all the urls as an argument? like [xxx, xxx, xxx]
 
-async def process_url(page, url, take_screenshot):
-    page = await page.goto(url)
+async def process_url(browser, url, take_screenshot):
+    page = await browser.new_page()
+    await page.goto(url)
     if take_screenshot:
         await capture_screenshot(page)
     else:
@@ -15,10 +16,9 @@ async def process_url(page, url, take_screenshot):
 
 async def run(playwright, urls, take_screenshot=False):
     browser = await playwright.chromium.launch()
-    page = await browser.new_page()
 
     tasks = [
-        process_url(page, url, take_screenshot) for url in urls
+        process_url(browser, url, take_screenshot) for url in urls
     ]
 
     await asyncio.gather(*tasks)
