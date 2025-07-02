@@ -8,11 +8,11 @@ import re
 
 async def process_url(browser, url, take_screenshot):
     page = await browser.new_page()
-    await page.goto(url)
+    await page.goto(url, wait_until="domcontentloaded", timeout=60000) # 60 seconds timeout
     if take_screenshot:
         await capture_screenshot(page)
     else:
-        await save_page_text(page, "body", url)
+        await save_page_text(page, "main", url)
 
 async def run(playwright, urls, take_screenshot=False):
     browser = await playwright.chromium.launch()
