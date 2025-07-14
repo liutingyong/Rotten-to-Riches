@@ -12,7 +12,7 @@ async def process_url(browser, url, take_screenshot):
     if take_screenshot:
         await capture_screenshot(page)
     else:
-        await save_page_text(page, "main", url)
+        await save_page_text(page, "main article", url)
 
 async def run(playwright, urls, take_screenshot=False):
     browser = await playwright.chromium.launch()
@@ -34,9 +34,15 @@ async def capture_screenshot(page):
     await page.screenshot(path=filename, full_page=True)
     print(f"Screenshot saved as {filename}")
 
+other_selectors = ["div.article__content", "div[itemprop='articleBody']", "article", "main"]
+
 async def save_page_text(page, selector, url):
     title = await page.title()
     content = await page.query_selector(selector)
+    if not content:
+        for item in other_selectors:
+            content = await page.query_selector(item)
+            if content: break # Fallback to body if selector not found
     text = (
         await content.inner_text() if content else "No requested selector found."
     )
