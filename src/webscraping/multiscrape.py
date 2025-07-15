@@ -2,9 +2,7 @@ import sys
 import asyncio
 from playwright.async_api import async_playwright
 import re
-from pathlib import Path
-save_directory = Path(__file__).parent / "scraped_data"
-save_directory.mkdir(parents=True, exist_ok=True)
+
 # combining webscrape.py and practice_async.py, multiple webscraping takes long, so we use async to speed it up 
 # information (as in urls) are all stored in a csv file, should provide the path to the csv file as an argument
 # or maybe just provide all the urls as an argument? like [xxx, xxx, xxx]
@@ -18,7 +16,7 @@ async def process_url(browser, url, take_screenshot):
         await save_page_text(page, "main article", url)
 
 async def run(playwright, urls, take_screenshot=False):
-    browser = await playwright.chromium.launch()
+    browser = await playwright.chromium.launch(headless=False)
 
     tasks = [
         process_url(browser, url, take_screenshot) for url in urls
@@ -57,6 +55,9 @@ async def save_page_text(page, selector, url):
         f.write(text)
     print(f"Data saved as {filename}")
 
+from pathlib import Path
+save_directory = Path(__file__).parent / "scraped_data"
+save_directory.mkdir(parents=True, exist_ok=True)
 def create_safe_filename(title):
     safe_title = re.sub(r"[^\w\s-]", "", title).strip().replace(" ", "_")
     return save_directory / f"{safe_title}.txt"
