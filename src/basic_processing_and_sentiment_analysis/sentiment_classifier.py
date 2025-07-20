@@ -86,3 +86,6 @@ for filename in directory.glob("*.txt"):
         features = extract_features(preprocess_text(text))
         label = classifier.classify(features)
         print(f"Sentiment for {filename.name}: {label}")
+
+#current accuracy: 65.2%, we have 1500 training exampls and 2000 featuresets
+#we can improve accuracy by using more data, better preprocessing, or more advanced models
