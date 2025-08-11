@@ -9,7 +9,7 @@ import re
 
 async def process_url(browser, url, take_screenshot):
     page = await browser.new_page()
-    await page.goto(url, wait_until="domcontentloaded", timeout=60000) # 60 seconds timeout
+    await page.goto(url, wait_until="domcontentloaded", timeout=90000) # 90 seconds timeout
     if take_screenshot:
         await capture_screenshot(page)
     else:
@@ -18,13 +18,23 @@ async def process_url(browser, url, take_screenshot):
 async def run(playwright, urls, take_screenshot=False):
     browser = await playwright.chromium.launch(headless=False)
 
+    sem = asyncio.Semaphore(4) # limit concurrent tasks to 4
+
+    async def process_url_with_semaphore(url):
+        async with sem:
+            await process_url(browser, url, take_screenshot)
     tasks = [
-        process_url(browser, url, take_screenshot) for url in urls
+        process_url_with_semaphore(url) for url in urls
     ]
 
-    await asyncio.gather(*tasks)
+    results = await asyncio.gather(*tasks, return_exceptions=True)
     await browser.close()
 
+    #report which ones failed
+    for url, result in zip(urls, results):
+        if isinstance(result, Exception):
+            print(f"Failed to process {url}: {result}")
+        
 async def main(urls, take_screenshot):
     async with async_playwright() as playwright:
         await run(playwright, urls, take_screenshot)
@@ -60,6 +70,8 @@ save_directory = Path(__file__).parent / "scraped_data"
 save_directory.mkdir(parents=True, exist_ok=True)
 def create_safe_filename(title):
     safe_title = re.sub(r"[^\w\s-]", "", title).strip().replace(" ", "_")
+    #dont make titles too long
+    safe_title = safe_title[:100] or "untitled"
     return save_directory / f"{safe_title}.txt"
 
 # def read_urls_from_csv(csv_file):
