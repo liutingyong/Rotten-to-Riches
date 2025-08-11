@@ -16,21 +16,33 @@ directory = Path("src/webscraping/scraped_data")
 text_paths = glob.glob(str(directory / "*.txt"))
 text_files = [Path(text).stem for text in text_paths]
 
-y = [0, 1, 1, 0] #defo need more data
+y = [0, 1, 1, 1, 0, 0] #defo need more data
 
-X_train, X_test, Y_train, Y_test = train_test_split(text_paths, test_size=0.2, random_state=42, stratify=y)
+print(len(text_paths), "files; labels:", len(y))
+
+X_train, X_test, Y_train, Y_test = train_test_split(text_paths, test_size=0.5, random_state=42, stratify=y)
+
 
 #honestly we can change the parameters later, idk if these are the best
 pipe = Pipeline([
     ("tfidf", TfidfVectorizer(input='filename', stop_words='english', lowercase=True, ngram_range=(1, 2), min_df=1, max_df=0.95, max_features=30000)),
     ("xgb", XGBClassifier(objective='binary:logistic', n_estimators=400, learning_rate=0.05, max_depth=6, subsample=0.9, colsample_bytree=0.9, reg_lambda=1.0, tree_method='hist', eval_metric='logloss', n_jobs=-1))
 ])
+#binary:logistic: binary classification with logistic regression
+#n_estimators is the number of trees to build, mroe trees = more learning power but chance of overfitting
+#higher depth (max_depth) means more complex trees --> more prone to overfitting
+#logloss is logarithmic loss, standard for binary classification, penalizes confident wrong predictions
+#n_jobs = -1 means it uses all available cores for training in parallel
+#xgb trains 400 shallow-to-medium depth trees, 
+#sampling of both rows and features for regularization (prevents overfitting), subsample for rows and colsample_bytree for features
+#learns slowly but carefully with low learning rate
+#outputs probabilities for our two classes
 
 pipe.fit(X_train, Y_train)
 
 pred = pipe.predict(X_test)
 #positive class probability, since positive class is 1
-probability = pipe.predict_proba(X_test)[:1]
-print(f"Accuracy: {accuracy_score(Y_test, pred, digits=4)}")
+probability = pipe.predict_proba(X_test)[:, 1]
+print(f"Accuracy: {accuracy_score(Y_test, pred):.4f}")
 
 #we can test with new files later
