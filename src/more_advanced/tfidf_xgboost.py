@@ -20,8 +20,7 @@ y = [0, 1, 1, 1, 0, 0] #defo need more data
 
 print(len(text_paths), "files; labels:", len(y))
 
-X_train, X_test, Y_train, Y_test = train_test_split(text_paths, test_size=0.5, random_state=42, stratify=y)
-
+X_train, X_test, Y_train, Y_test = train_test_split(text_paths, y, test_size=0.5, random_state=42, stratify=y)
 
 #honestly we can change the parameters later, idk if these are the best
 pipe = Pipeline([
