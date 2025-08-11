@@ -36,6 +36,8 @@ pipe = Pipeline([
 #sampling of both rows and features for regularization (prevents overfitting), subsample for rows and colsample_bytree for features
 #learns slowly but carefully with low learning rate
 #outputs probabilities for our two classes
+#reg_lambda is L2 regularization term, discourages large weights, model now relies on more features
+
 
 pipe.fit(X_train, Y_train)
 
