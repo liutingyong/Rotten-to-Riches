@@ -9,7 +9,7 @@
 import sklearn
 from sklearn.feature_extraction.text import TfidfVectorizer
 import pandas as pd
-pd.set_option("max_rows", 600)
+#pd.set_option("max_rows", 600)
 from pathlib import Path
 import glob
 

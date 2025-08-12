@@ -1,5 +1,7 @@
 #now using tf-idf for xgboost, which does the actual predictions
 #we should tune later
+#tfidf finds more relative importance of words in documents
+#xgboost benefits from more weighted features
 
 
 from sklearn.model_selection import train_test_split
