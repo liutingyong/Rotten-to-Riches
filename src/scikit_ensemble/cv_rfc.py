@@ -1,5 +1,5 @@
 #countvectorizer + random forest classifier
-
+#why are they so similar? it's because they're both tree-based models AND A PART OF SCIKITLEARN LOL
 import sklearn
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.ensemble import RandomForestClassifier

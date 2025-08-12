@@ -46,4 +46,4 @@ pred = pipe.predict(X_test)
 probability = pipe.predict_proba(X_test)[:, 1]
 print(f"Accuracy: {accuracy_score(Y_test, pred):.4f}")
 
-#we can test with new files later
+#further testing. let's allow entering another link to webscrape and then classify that!
