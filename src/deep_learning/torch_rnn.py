@@ -10,6 +10,9 @@
 #or do we just want to train on the articles? won't be very accurate bc we dont have many
 
 #pip install torch
+import io
+import os
+from collections import Counter
 import torch 
 import torch.nn as nn
 from torch.utils.data import DataSet, DataLoader
@@ -18,4 +21,22 @@ from torch.utils.data import DataSet, DataLoader
 #use GloVe
 #potential homework: train your own embeddings with movie reviews dataset
 #maybe even webscrape a review website like imdb/rottentomatoes to train your own embeddings
+
+specials = ["<pad>", "<unk>"]
+pad_idx = 0
+unk_idx = 1
+
+
+def build_vocab(tokenized_texts, max_vocab=30000, min_freq=1, lowercase=True):
+    counter = Counter()
+    for text in tokenized_texts:
+        if lowercase:
+            text = [word.lower() for word in text]
+        counter.update(text)
+    most_common = [w for w, c in counter.items() if c >= min_freq]
+    most_common = sorted(most_common, key=lambda x: -counter[x])[:max_vocab-len(specials)]
+    index_to_string = specials + most_common
+    string_to_index = {s: i for i, s in enumerate(index_to_string)}
+    return index_to_string, string_to_index
+
 
