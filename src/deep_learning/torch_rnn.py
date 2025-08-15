@@ -69,3 +69,27 @@ def make_embedding_matrix(itos, stoi, pretrained, dim, pad_idx=0, unk_idx=1):
     if unk_idx is not None & len(pretrained) > 0:
         embedding_matrix[unk_idx] = torch.stack(list(pretrained.values)).mean(dim=0)
     return embedding_matrix, coverage
+
+def ids_from_tokens(tokens, stoi, lowercase=True):
+    if lowercase:
+        tokens = [t.lower() for t in tokens]
+    return [stoi.get(t, unk_idx) for t in tokens]
+
+def pad_truncate(ids, L, pad_idx=0):
+    if len(ids) > L:
+        return ids[:L]
+    else:
+        return ids + [pad_idx] * (L - len(ids))
+    
+class SentDataset(Dataset):
+    def __init__(self, tokenized_texts, labels, stoi, L=200):
+        self.x=[pad_truncate(ids_from_tokens(text, stoi), L) for text in tokenized_texts]
+        self.y = labels
+        self.L = L
+
+    def __len__(self):
+        return len(self.texts)
+
+    def __getitem__(self, i):
+        return torch.tensor(self.x[i], dtype=torch.long), torch.tensor(self.y[i], dtype=torch.float32)
+    
