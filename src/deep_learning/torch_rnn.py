@@ -53,3 +53,19 @@ def load_glove_txt(path, dim, lower_case=True):
             vals = torch.tensor(list(map(float, parts[1:])), dtype=torch.float32)
             vecs[word]=vals
     return vecs
+
+def make_embedding_matrix(itos, stoi, pretrained, dim, pad_idx=0, unk_idx=1):
+    V=len(itos)
+    embedding_matrix = torch.randn(V, dim) * 0.1
+    embedding_matrix[pad_idx].zero_()
+    hit = 0
+    for w, i in stoi.items():
+        if i in (pad_idx, unk_idx):
+            continue
+        if w in pretrained:
+            embedding_matrix[i] = pretrained[w]
+            hit += 1
+    coverage = hit / (V - len(specials))
+    if unk_idx is not None & len(pretrained) > 0:
+        embedding_matrix[unk_idx] = torch.stack(list(pretrained.values)).mean(dim=0)
+    return embedding_matrix, coverage
