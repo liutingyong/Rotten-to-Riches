@@ -39,4 +39,17 @@ def build_vocab(tokenized_texts, max_vocab=30000, min_freq=1, lowercase=True):
     string_to_index = {s: i for i, s in enumerate(index_to_string)}
     return index_to_string, string_to_index
 
-
+#make it into a txt to use in pytorch
+def load_glove_txt(path, dim, lower_case=True):
+    vecs={}
+    with io.open(path, 'r', encoding='utf-8', newline='\n', errors='ignore') as f:
+        for line in f:
+            parts = line.strip().split()
+            if len(parts) != dim + 1:
+                continue
+            word = parts[0]
+            if lower_case:
+                word = word.lower()
+            vals = torch.tensor(list(map(float, parts[1:])), dtype=torch.float32)
+            vecs[word]=vals
+    return vecs
