@@ -112,3 +112,25 @@ class BiLSTMClassifier(nn.Module):
         h_last = self.dropout(h_last)
         logit = self.fc(h_last).squeeze(1)
         return logit
+
+def build_model_with_pretrained(train_tokens, val_tokens, y_train, y_val, glove_path, seq_len=200, dim=100,
+                                batch_size=64, freeze_embeddings=True, device=None):
+    device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+    #vocab
+    itos, stoi = build_vocab(train_tokens, max_vocab=30000, min_freq=1, lowercase=True)
+    #load vectors
+    glove = load_glove_txt(glove_path, dim=dim, lower_case=True)
+    #embedding matrix
+    weight = make_embedding_matrix(itos, stoi, glove, dim, pad_idx=pad_idx, unk_idx=unk_idx)
+    embedding = nn.Embedding.from_pretrained(weight, freeze=freeze_embeddings, padding_idx=pad_idx)
+    #datasets
+    train_dataset = SentDataset(train_tokens, y_train, stoi, L=seq_len)
+    val_dataset = SentDataset(val_tokens, y_val, stoi, L=seq_len)
+    train_dl = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    val_dl = DataLoader(val_dataset, batch_size=batch_size)
+    #model
+    model = BiLSTMClassifier(embedding_layer=embedding, hidden=128, num_layer=1, bidir=True, dropout=0.3).to(device)
+    criterion = nn.BCEWithLogitsLoss() #loss function
+    optimizer = torch.optim.Adam((filter(lambda p: p.requires_grad, model.parameters())), lr=2e-3)
+
+    #training loop
