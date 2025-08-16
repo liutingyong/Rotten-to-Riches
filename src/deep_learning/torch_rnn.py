@@ -15,7 +15,7 @@ import os
 from collections import Counter
 import torch 
 import torch.nn as nn
-from torch.utils.data import DataSet, DataLoader
+from torch.utils.data import Dataset, DataLoader
 
 #we will used pretrained embeddings because we don't have enough data to train our own
 #use GloVe
@@ -93,3 +93,22 @@ class SentDataset(Dataset):
     def __getitem__(self, i):
         return torch.tensor(self.x[i], dtype=torch.long), torch.tensor(self.y[i], dtype=torch.float32)
     
+class BiLSTMClassifier(nn.Module):
+    def __init__(self, embedding_layer, hidden=128, num_layer=1, bidir=True, dropout=0.3):
+        super().__init__()
+        self.embedding = embedding_layer
+        self.lstm = nn.LSTM(self.embedding.embedding_dim, hidden, num_layers=num_layer, batch_first=True, bidirectional=bidir)
+        self.dropout = nn.Dropout(dropout)
+        out_dim = hidden * 2 if bidir else hidden
+        self.fc = nn.Linear(out_dim, 1)
+
+    def forward(self, x):
+        emb = self.embedding(x)
+        out, (h, c) = self.lstm(emb)
+        if self.lstm.bidirectional:
+            h_last = torch.cat([h[-2], h[-1]], dim=1)
+        else:
+            h_last = h[-1]
+        h_last = self.dropout(h_last)
+        logit = self.fc(h_last).squeeze(1)
+        return logit
