@@ -134,3 +134,44 @@ def build_model_with_pretrained(train_tokens, val_tokens, y_train, y_val, glove_
     optimizer = torch.optim.Adam((filter(lambda p: p.requires_grad, model.parameters())), lr=2e-3)
 
     #training loop
+    def accuracy_from_logit(logits, y_true):
+        preds = (torch.sigmoid(logits) >= 0.5).float()
+        return (preds == y_true).float().mean().item()
+    #actual start oops
+    for epoch in range(10):
+        model.train()
+        train_loss = 0
+        train_acc = 0
+        train_n = 0
+        for x, y in train_dl:
+            x, y = x.to(device), y.to(device)
+            optimizer.zero_grad()
+            logits = model(x)
+            loss = criterion(logits, y)
+            loss.backward()
+            optimizer.step()
+            train_loss += loss.item() * x.size(0)
+            train_n += x.size(0)
+            #train_acc += accuracy_from_logit(logits, y) * x.size(0)
+
+        train_loss /= len(train_dl.dataset)
+        train_acc /= len(train_dl.dataset)
+
+        model.eval()
+        val_loss = 0
+        val_acc = 0
+        val_n = 0
+        with torch.no_grad():
+            for x, y in val_dl:
+                x, y = x.to(device), y.to(device)
+                logits = model(x)
+                loss = criterion(logits, y)
+                val_loss += loss.item() * x.size(0)
+                val_acc += accuracy_from_logit(logits, y) * x.size(0)
+                val_n += x.size(0)
+
+
+        print(f"Epoch {epoch+1}: Train Loss: {train_loss/train_n:.4f}"
+              f"Val Loss: {val_loss/val_n:.4f}, Val Acc: {val_acc/val_n:.4f}")
+    return model, (itos, stoi)
+
