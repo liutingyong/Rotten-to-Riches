@@ -50,13 +50,16 @@ from nltk.corpus import movie_reviews
 nltk.download('movie_reviews')
 import random
 
+#categories are positiev or negative
 docs = []
 for category in movie_reviews.categories():
+    #this part gets all the fileids of a specifi ccategory
     for fileid in movie_reviews.fileids(category):
+        #movie_reviews.words(fileid) gets all the words in that file (tokenized)
+        #docs is a list of tuples, where each tuple contains a list of words and their corresponding category (pos, neg)
         docs.append((list(movie_reviews.words(fileid)), category))
 
 random.shuffle(docs)
-#our data is a list of tuples, where each tuple contains a dictionary of words and their labels (pos, neg)
 featuresets = []
 for (words, label) in docs:
     try:
