@@ -18,7 +18,7 @@ directory = Path("src/webscraping/scraped_data")
 text_paths = glob.glob(str(directory / "*.txt"))
 text_files = [Path(text).stem for text in text_paths]
 
-y = [0, 1, 1, 1, 0, 0] #defo need more data
+y = [0, 1, 1, 1, 0, 0, 0] #defo need more data
 
 X_train, X_test, Y_train, Y_test = train_test_split(text_paths, y, test_size=0.5, random_state=42, stratify=y)
 

@@ -13,7 +13,7 @@ directory = Path("src/webscraping/scraped_data")
 text_paths = glob.glob(str(directory / "*.txt"))
 text_files = [Path(text).stem for text in text_paths]
 
-y = [0, 1, 1, 1, 0, 0] #defo need more data
+y = [0, 1, 1, 1, 0, 0, 0] #defo need more data
 
 pipeline = Pipeline([
     ('countvectorizer', CountVectorizer(input='filename', stop_words='english', lowercase=True, ngram_range=(1, 2))), 
