@@ -82,13 +82,26 @@ classifier = NaiveBayesClassifier.train(training_set)
 #test accuracy
 print(f"Classifier accuracy: {nltk.classify.accuracy(classifier, testing_set)}")
 
+
+classifications = []
 for filename in directory.glob("*.txt"):
     with open(filename, "r", encoding="utf-8") as file:
         text = file.read()
         print(f"Classifying file: {filename.name}")
         features = extract_features(preprocess_text(text))
         label = classifier.classify(features)
+        if label == 'pos':
+            classifications.append(1)
+        else:
+            classifications.append(0)
         print(f"Sentiment for {filename.name}: {label}")
 
-#current accuracy: 65.2%, we have 1500 training exampls and 2000 featuresets
 #we can improve accuracy by using more data, better preprocessing, or more advanced models
+
+#change our current data to be more relevant to our use case so we can make actual bets
+percentage_pos = classifications.count(1) / len(classifications)
+print(f"Percentage of positive sentiment: {percentage_pos:.2%}")
+if percentage_pos > 0.6:
+    print("Overall Sentiment: Positive")
+elif percentage_pos < 0.4:
+    print("Overall Sentiment: Negative")
