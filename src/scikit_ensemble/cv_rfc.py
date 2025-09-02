@@ -29,5 +29,13 @@ X_train, X_test, Y_train, Y_test = train_test_split(text_paths, y, test_size=0.5
 pipeline.fit(X_train, Y_train)
 
 y_prediction = pipeline.predict(X_test)
+y_prediction
+
+prediction = sum(y_prediction) / len(y_prediction)
+prediction
+if prediction > 0.6:
+    print("Overall Sentiment: Positive")
+elif prediction < 0.4:
+    print("Overall Sentiment: Negative")
 
 print(f"Accuracy: {accuracy_score(Y_test, y_prediction):.4f}")

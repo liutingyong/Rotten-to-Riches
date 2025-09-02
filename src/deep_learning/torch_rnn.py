@@ -1,3 +1,4 @@
+#just for fun if you are interested in deep learning
 #lstm: reads embeddings sequentially
 #forget gate: decides what to forget
 #input gate: decides what to add to the cell state
