@@ -42,9 +42,16 @@ pipe = Pipeline([
 pipe.fit(X_train, Y_train)
 
 pred = pipe.predict(X_test)
-#positive class probability, since positive class is 1
+#here our prediction will be marked through at a threshold of 0.5. if not confident enoug it will just classify as 0
+#we can adjust this threshold later if we want to be more/less conservative
+#left is the probability of class 0, right is the probability of class 1
 probability = pipe.predict_proba(X_test)[:, 1]
 print(f"Accuracy: {accuracy_score(Y_test, pred):.4f}")
 
-#further testing. let's allow entering another link to webscrape and then classify that!
-#stephane do this, lmk if it's a good idea for hw
+#overall decision
+prediction = sum(pred) / len(pred)
+prediction
+if prediction > 0.6:
+    print("Overall Sentiment: Positive")
+elif prediction < 0.4:
+    print("Overall Sentiment: Negative")
