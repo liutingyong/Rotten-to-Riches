@@ -1,5 +1,5 @@
 import nltk
-#nltk.download("all") <- ts takes forever vro
+nltk.download("all")
 
 #tokenization
 statement = "Codeology is the best tech club. Avomatoes is the best internal project."
