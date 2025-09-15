@@ -86,7 +86,7 @@ def analyze_single_market(client, ticker):
         return market_prices
         
     except Exception as e:
-        print(f"❌ ERROR: Failed to get market data for {ticker}: {str(e)}")
+        print(f"ERROR: Failed to get market data for {ticker}: {str(e)}")
         return None
 
 def get_event_markets(client, event_ticker):
@@ -99,7 +99,7 @@ def get_event_markets(client, event_ticker):
         
         if 'markets' in markets_response:
             markets = markets_response['markets']
-            print(f"✅ Found {len(markets)} markets for event {event_ticker}")
+            print(f"Found {len(markets)} markets for event {event_ticker}")
             
             # Extract tickers from the markets
             market_tickers = []
@@ -110,11 +110,11 @@ def get_event_markets(client, event_ticker):
             
             return market_tickers
         else:
-            print(f"⚠️ No markets found for event {event_ticker}")
+            print(f"No markets found for event {event_ticker}")
             return []
             
     except Exception as e:
-        print(f"❌ ERROR: Failed to get markets for event {event_ticker}: {str(e)}")
+        print(f"ERROR: Failed to get markets for event {event_ticker}: {str(e)}")
         return []
 
 def analyze_multiple_markets(client, market_tickers):
@@ -158,16 +158,7 @@ def main():
     KALSHI_URL = os.getenv('KALSHI_URL')
     
     if not KALSHI_URL:
-        print("❌ ERROR: KALSHI_URL not provided!")
-        print("\n📋 To use this program:")
-        print("1. Open your .env file")
-        print("2. Add this line:")
-        print("   KALSHI_URL=https://kalshi.com/markets/your-event/market-name")
-        print("\n📝 Examples:")
-        print("   KALSHI_URL=https://kalshi.com/markets/kxrttronares/tron-ares-rotten-tomatoes-score/kxrttronares")
-        print("   KALSHI_URL=https://kalshi.com/markets/kxrtconjuring/conjuring-rotten-tomatoes-score")
-        print("   KALSHI_URL=https://demo.kalshi.co/trade/KXRTCONJURING-60")
-        print("\n💡 Just paste any Kalshi URL and the program will find all related markets!")
+        print("ERROR: KALSHI_URL not provided!")
         exit(1)
     
     print(f"🔗 Analyzing URL: {KALSHI_URL}")
@@ -204,22 +195,13 @@ def main():
         KEYFILE = os.getenv('PROD_KEYFILE') or "KalshiProductionAPI.pem"
     
     if not KEYID:
-        print("❌ ERROR: API credentials not configured!")
-        print(f"\nTo fix this for {env.value} environment:")
-        print("1. Add these lines to your .env file:")
-        if env == Environment.DEMO:
-            print("   DEMO_KEYID=your_demo_key_id")
-            print("   DEMO_KEYFILE=KalshiDemoAPI.pem")
-        else:
-            print("   PROD_KEYID=your_production_key_id")
-            print("   PROD_KEYFILE=KalshiProductionAPI.pem")
-        print("\n2. Place your private key file in this directory")
-        print("3. Get your API credentials from https://kalshi.com")
+        print("ERROR: API credentials not configured, put key id and pem in .env file.")
+        
         exit(1)
     
     # Check if private key file exists
     if not os.path.exists(KEYFILE):
-        print(f"❌ ERROR: Private key file not found: {KEYFILE}")
+        print(f"ERROR: Private key file not found: {KEYFILE}")
         print(f"Please place your private key file '{KEYFILE}' in this directory")
         exit(1)
     
@@ -230,9 +212,9 @@ def main():
                 key_file.read(),
                 password=None
             )
-        print(f"✅ Loaded private key: {KEYFILE}")
+        print(f"Loaded private key: {KEYFILE}")
     except Exception as e:
-        print(f"❌ ERROR: Failed to load private key: {str(e)}")
+        print(f"ERROR: Failed to load private key: {str(e)}")
         exit(1)
     
     # ========================================
@@ -244,9 +226,9 @@ def main():
             private_key=private_key,
             environment=env
         )
-        print(f"✅ Connected to {env.value} environment")
+        print(f"Connected to {env.value} environment")
     except Exception as e:
-        print(f"❌ ERROR: Failed to connect: {str(e)}")
+        print(f"ERROR: Failed to connect: {str(e)}")
         exit(1)
     
     # ========================================
@@ -262,11 +244,11 @@ def main():
         # Analyze all markets
         all_market_data = analyze_multiple_markets(client, MARKET_TICKERS)
         
-        print(f"\n✅ Successfully analyzed {len(all_market_data)} markets!")
+        print(f"\nSuccessfully analyzed {len(all_market_data)} markets!")
         print("📈 All market data is stored in 'all_market_data' for your analysis")
         
     else:
-        print(f"❌ No markets found for event {EVENT_TICKER}")
+        print(f"No markets found for event {EVENT_TICKER}")
         print("The event might not be active or the URL might be incorrect")
         exit(1)
 
