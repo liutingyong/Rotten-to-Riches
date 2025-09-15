@@ -2,6 +2,7 @@ import os
 from dotenv import load_dotenv
 from cryptography.hazmat.primitives import serialization
 from clients import KalshiHttpClient, Environment
+from betting_system import BettingSystem
 
 def extract_ticker_from_url(url_or_ticker):
     """
@@ -74,14 +75,6 @@ def analyze_single_market(client, ticker):
             'open_interest': market_info.get('open_interest')
         }
         
-        # Print simplified price summary
-        print(f"\n📊 {market_prices['title']}")
-        print(f"Ticker: {market_prices['ticker']}")
-        print(f"Yes Bid: {market_prices['yes_bid']} cents")
-        print(f"Yes Ask: {market_prices['yes_ask']} cents")
-        print(f"No Bid: {market_prices['no_bid']} cents")
-        print(f"No Ask: {market_prices['no_ask']} cents")
-        print(f"Last Price: {market_prices['last_price']} cents")
         
         return market_prices
         
@@ -94,7 +87,7 @@ def get_event_markets(client, event_ticker):
     Get all markets for a specific event
     """
     try:
-        print(f"🔍 Fetching all markets for event: {event_ticker}")
+        print(f"Fetching all markets for event: {event_ticker}")
         markets_response = client.get_markets(event_ticker=event_ticker)
         
         if 'markets' in markets_response:
@@ -123,17 +116,16 @@ def analyze_multiple_markets(client, market_tickers):
     """
     all_market_data = {}
     
-    print(f"\n🔍 Analyzing {len(market_tickers)} markets...")
+    print(f"\nAnalyzing {len(market_tickers)} markets...")
     
     for i, ticker in enumerate(market_tickers, 1):
-        print(f"\n--- Market {i}/{len(market_tickers)} ---")
         market_data = analyze_single_market(client, ticker)
         if market_data:
             all_market_data[ticker] = market_data
     
     # Print comparison summary
     if all_market_data:
-        print(f"\n📈 COMPARISON SUMMARY ({len(all_market_data)} markets):")
+        print(f"\nCOMPARISON SUMMARY ({len(all_market_data)} markets):")
         print("Ticker".ljust(20) + "Yes Bid".ljust(10) + "Yes Ask".ljust(10) + "No Bid".ljust(10) + "No Ask".ljust(10) + "Last Price".ljust(12))
         print("-" * 72)
         
@@ -146,14 +138,14 @@ def main():
     """
     Main function to analyze Kalshi markets
     """
-    print("🚀 Kalshi Market Analyzer")
+    print("Kalshi Market Analyzer")
     print("=" * 50)
     
     # Load environment variables
     load_dotenv()
     
     # ========================================
-    # 📝 STEP 1: PASTE YOUR KALSHI URL HERE
+    # STEP 1: PASTE YOUR KALSHI URL HERE
     # ========================================
     KALSHI_URL = os.getenv('KALSHI_URL')
     
@@ -161,10 +153,10 @@ def main():
         print("ERROR: KALSHI_URL not provided!")
         exit(1)
     
-    print(f"🔗 Analyzing URL: {KALSHI_URL}")
+    print(f"Analyzing URL: {KALSHI_URL}")
     
     # ========================================
-    # 🔍 STEP 2: EXTRACT EVENT TICKER
+    # STEP 2: EXTRACT EVENT TICKER
     # ========================================
     extracted_ticker = extract_ticker_from_url(KALSHI_URL)
     
@@ -172,20 +164,20 @@ def main():
     if '-' in extracted_ticker and any(char.isdigit() for char in extracted_ticker):
         # It's a market ticker like KXRTCONJURING-60, extract event part
         EVENT_TICKER = extracted_ticker.split('-')[0]
-        print(f"🔗 Extracted event ticker '{EVENT_TICKER}' from market ticker '{extracted_ticker}'")
+        print(f"Extracted event ticker '{EVENT_TICKER}' from market ticker '{extracted_ticker}'")
     else:
         # It's already an event ticker
         EVENT_TICKER = extracted_ticker
-        print(f"🎯 Using event ticker: {EVENT_TICKER}")
+        print(f"Using event ticker: {EVENT_TICKER}")
     
     # ========================================
-    # 🌍 STEP 3: DETECT ENVIRONMENT
+    # STEP 3: DETECT ENVIRONMENT
     # ========================================
     env = detect_environment_from_url(KALSHI_URL)
-    print(f"🌍 Environment: {env.value}")
+    print(f"Environment: {env.value}")
     
     # ========================================
-    # 🔑 STEP 4: LOAD CREDENTIALS
+    # STEP 4: LOAD CREDENTIALS
     # ========================================
     if env == Environment.DEMO:
         KEYID = os.getenv('DEMO_KEYID')
@@ -218,7 +210,7 @@ def main():
         exit(1)
     
     # ========================================
-    # 🔌 STEP 5: INITIALIZE CLIENT
+    # STEP 5: INITIALIZE CLIENT
     # ========================================
     try:
         client = KalshiHttpClient(
@@ -232,20 +224,46 @@ def main():
         exit(1)
     
     # ========================================
-    # 📊 STEP 6: ANALYZE MARKETS
+    # STEP 6: ANALYZE MARKETS
     # ========================================
-    print(f"\n🔍 Finding all markets for event: {EVENT_TICKER}")
+    print(f"\nFinding all markets for event: {EVENT_TICKER}")
     MARKET_TICKERS = get_event_markets(client, EVENT_TICKER)
     
     if MARKET_TICKERS:
-        print(f"📋 Found {len(MARKET_TICKERS)} markets:")
+        print(f"Found {len(MARKET_TICKERS)} markets:")
         print("Market tickers:", MARKET_TICKERS)
         
         # Analyze all markets
         all_market_data = analyze_multiple_markets(client, MARKET_TICKERS)
         
         print(f"\nSuccessfully analyzed {len(all_market_data)} markets!")
-        print("📈 All market data is stored in 'all_market_data' for your analysis")
+        print("All market data is stored in 'all_market_data' for your analysis")
+        
+        # ========================================
+        # STEP 7: BETTING WORKFLOW
+        # ========================================
+        print(f"\nBETTING WORKFLOW")
+        print("=" * 50)
+        
+        # Check if user wants to proceed with betting
+        while True:
+            betting_choice = input("\nDo you want to proceed with betting analysis? (yes/no): ").lower()
+            if betting_choice in ['yes', 'y']:
+                break
+            elif betting_choice in ['no', 'n']:
+                print("Betting workflow skipped. Market analysis complete.")
+                return
+            else:
+                print("Please enter 'yes' or 'no'")
+        
+        # Initialize betting system
+        betting_system = BettingSystem(client)
+        
+        # Display account balance
+        betting_system.display_account_balance()
+        
+        # Process betting workflow
+        betting_system.process_betting_workflow(all_market_data)
         
     else:
         print(f"No markets found for event {EVENT_TICKER}")

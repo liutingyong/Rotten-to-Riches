@@ -1,97 +1,118 @@
-# 🚀 Kalshi Market Analyzer
+# 🎲 Kalshi Betting System
 
-**Super simple Kalshi market analysis tool** - just paste a URL and get all market data!
+A simple betting system for Kalshi prediction markets with safety features and user confirmation prompts.
 
-## ⚡ Quick Start
+## 🚀 Quick Start
 
-### 1. Add Your Kalshi URL
-Open your `.env` file and add:
+1. **Set up your .env file:**
+```env
+KALSHI_URL=https://demo.kalshi.co/trade/YOUR-MARKET-TICKER
+DEMO_KEYID=your_demo_key_id_here
+DEMO_KEYFILE=KalshiDemoAPI.pem
 ```
-KALSHI_URL=https://kalshi.com/markets/your-event/market-name
-```
 
-### 2. Run the Program
+2. **Run the system:**
 ```bash
 python3 main.py
 ```
 
-**That's it!** 🎉
+3. **Follow the prompts:**
+   - Enter your Kalshi URL
+   - Review market analysis
+   - Choose whether to bet
+   - Confirm each bet (1 share limit)
 
-## 📋 What It Does
+## 🛡️ Safety Features
 
-✅ **Paste any Kalshi URL** - works with production, demo, or direct tickers  
-✅ **Automatically finds all markets** for that event  
-✅ **Analyzes all prices** (bid, ask, last price)  
-✅ **Shows clean comparison table** for easy analysis  
-✅ **Perfect for comparing your predictions** against market sentiment  
-
-## 📖 Detailed Instructions
-
-See `HOW_TO_USE.md` for complete instructions and examples.
-
-## 🛠️ Setup
-
-For API credentials setup, see:
-- `SETUP.md` - Complete setup guide
-- `ENV_SETUP.md` - Environment variable configuration
+- **1-Share Limit**: All bets limited to exactly 1 share
+- **Double Confirmation**: Two confirmations required for each bet
+- **Skip Options**: Can skip any bet or exit anytime
+- **Balance Display**: Shows account balance before betting
 
 ## 📁 Files
 
-- `main.py` - Main analyzer (clean and simple!)
-- `HOW_TO_USE.md` - **Start here!** Simple usage guide
-- `clients.py` - Kalshi API client implementations
+- `main.py` - Main betting system (run this)
+- `betting_system.py` - Core betting functionality
+- `client_wrapper.py` - Wrapper for official Kalshi client
 - `requirements.txt` - Python dependencies
-- `SETUP.md` - Detailed setup instructions
-- `ENV_SETUP.md` - Environment variable setup guide
 
-## 🔗 Supported URL Formats
+## 🎯 How It Works
 
+1. **Market Analysis**: Fetches and analyzes markets for your event
+2. **Betting Recommendations**: Shows betting opportunities with confidence scores
+3. **User Confirmation**: Asks you to confirm each bet (1 share limit)
+4. **Bet Placement**: Places confirmed bets on Kalshi
+5. **Summary**: Shows results of all betting activity
+
+## 🔧 Setup
+
+1. **Activate virtual environment:**
+```bash
+source venv/bin/activate
 ```
-KALSHI_URL=https://kalshi.com/markets/kxrttronares/tron-ares-rotten-tomatoes-score/kxrttronares
-KALSHI_URL=https://kalshi.com/markets/kxrtconjuring/conjuring-rotten-tomatoes-score
-KALSHI_URL=https://demo.kalshi.co/trade/KXRTCONJURING-60
-KALSHI_URL=KXRTCONJURING-60
-KALSHI_URL=KXRTRONARES
+
+2. **Install dependencies:**
+```bash
+pip install -r requirements.txt
 ```
 
-**Just paste any Kalshi URL and the program figures out the rest!** 🚀
+3. **Configure .env file** with your Kalshi credentials
 
-## 📊 Example Output
+4. **Place your private key file** (e.g., `KalshiDemoAPI.pem`) in this directory
+
+## 🎓 Example Usage
 
 ```
 🚀 Kalshi Market Analyzer
 ==================================================
-🔗 Analyzing URL: https://kalshi.com/markets/kxrttronares/tron-ares-rotten-tomatoes-score/kxrttronares
-🎯 Using event ticker: KXRTTRONARES
-🌍 Environment: prod
-✅ Loaded private key: KalshiProdAPI.pem
-✅ Connected to prod environment
+🔗 Analyzing URL: https://demo.kalshi.co/trade/KXRTCONJURING-60
+🌍 Environment: demo
+Connected to demo environment
 
-🔍 Finding all markets for event: KXRTTRONARES
-✅ Found 7 markets for event KXRTTRONARES
+🔍 Finding all markets for event: KXRTCONJURING
+📋 Found 3 markets: ['KXRTCONJURING-60', 'KXRTCONJURING-80', 'KXRTCONJURING-100']
 
-📈 COMPARISON SUMMARY (7 markets):
-Ticker              Yes Bid   Yes Ask   No Bid    No Ask    Last Price  
-------------------------------------------------------------------------
-KXRTTRONARES-80     8         13        87        92        13          
-KXRTTRONARES-70     27        33        67        73        33          
-KXRTTRONARES-65     35        44        56        65        44          
-KXRTTRONARES-90     2         5         95        98        7           
-KXRTTRONARES-75     17        22        78        83        22          
-KXRTTRONARES-60     46        47        53        54        46          
-KXRTTRONARES-45     78        81        19        22        81          
+📊 Market Analysis Results...
+Successfully analyzed 3 markets!
 
-✅ Successfully analyzed 7 markets!
+🎲 BETTING WORKFLOW
+==================================================
+Do you want to proceed with betting analysis? (yes/no): yes
+
+💰 ACCOUNT BALANCE
+Available Balance: $100.00
+
+🎯 BETTING RECOMMENDATIONS (2 opportunities):
+1. Will The Conjuring 4 gross over $60M worldwide?
+   Recommendation: BET YES
+   Confidence: 75%
+   Current Price: 45 cents
+
+🛡️ SAFETY LIMIT: Betting exactly 1 share
+Do you want to proceed with betting 1 share? (yes/no/skip): yes
+Do you want to place this bet? (yes/no): yes
+
+🚀 Placing bet order...
+✅ Bet placed successfully!
+Order ID: ORD-12345
 ```
 
-## 🔄 To Analyze Different Events
+## ⚠️ Important Notes
 
-Just change the URL in your `.env` file and run again!
+- **Start with demo environment** for safety
+- **All bets are 1 share maximum** for risk management
+- **Double confirmation required** for each bet
+- **You can skip any bet** or exit anytime
 
-## 💡 Pro Tips
+## 🔮 Future: Sentiment Analysis Integration
 
-- **Works with any Kalshi URL** - production, demo, or direct tickers
-- **Automatically detects environment** (demo vs production)
-- **Finds all related markets** for comprehensive analysis
-- **Clean, easy-to-read output** perfect for comparison
-- **No complex setup** - just paste and run!
+The system is ready to integrate with your existing sentiment analysis modules:
+- `src/basic_processing_and_sentiment_analysis/`
+- `src/scikit_ensemble/`
+- `src/webscraping/`
+
+Replace the mock analysis in `betting_system.py` with your real sentiment analysis.
+
+---
+
+**Ready to start? Run `python main.py`**
