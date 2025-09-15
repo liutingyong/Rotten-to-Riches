@@ -6,9 +6,15 @@ Uses the official KalshiClientsBaseV2ApiKey client structure
 
 import json
 import uuid
+import sys
+import os
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 from enum import Enum
+
+# Add the src directory to the path to import sentiment analysis
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+from basic_processing_and_sentiment_analysis.sentiment_classifier import sentiment_analyzer
 
 @dataclass
 class BetRecommendation:
@@ -43,65 +49,94 @@ class BettingSystem:
         self.client = client
         self.pending_bets = []
     
-    def analyze_markets_for_betting(self, market_data: Dict[str, Dict]) -> List[BetRecommendation]:
+    def analyze_markets_for_betting(self, market_data: Dict[str, Dict], scraped_data: Dict[str, List[str]] = None) -> List[BetRecommendation]:
         """
-        Analyze market data and return betting recommendations
-        This is where sentiment analysis will be integrated
+        Analyze market data and return betting recommendations using sentiment analysis
         
         Args:
             market_data: Dictionary of market data from main.py
+            scraped_data: Dictionary mapping tickers to lists of scraped text data
             
         Returns:
             List of BetRecommendation objects
         """
         recommendations = []
         
+        if scraped_data is None:
+            scraped_data = {}
+        
         for ticker, data in market_data.items():
-            # Placeholder for sentiment analysis integration
-            # This will be replaced with actual sentiment analysis
-            recommendation = self._mock_sentiment_analysis(ticker, data)
+            # Get scraped data for this ticker, or use empty list if none available
+            ticker_scraped_data = scraped_data.get(ticker, [])
+            
+            # Use sentiment analysis for betting recommendations
+            recommendation = self._analyze_sentiment_for_market(ticker, data, ticker_scraped_data)
             if recommendation:
                 recommendations.append(recommendation)
         
         return recommendations
     
-    def _mock_sentiment_analysis(self, ticker: str, market_data: Dict) -> Optional[BetRecommendation]:
+    def _analyze_sentiment_for_market(self, ticker: str, market_data: Dict, scraped_data: List[str]) -> Optional[BetRecommendation]:
         """
-        Mock sentiment analysis - replace this with actual sentiment analysis
-        This is a placeholder that simulates analysis results
-        """
-        # Mock analysis based on price patterns
-        yes_bid = market_data.get('yes_bid', 0)
-        yes_ask = market_data.get('yes_ask', 0)
-        no_bid = market_data.get('no_bid', 0)
-        no_ask = market_data.get('no_ask', 0)
+        Analyze sentiment for a specific market using scraped data and NLTK sentiment analysis
         
-        # Simple mock logic - in real implementation, this would use scraped data
-        if yes_bid and yes_ask and no_bid and no_ask:
-            yes_spread = yes_ask - yes_bid
-            no_spread = no_ask - no_bid
+        Args:
+            ticker: Market ticker
+            market_data: Market data dictionary
+            scraped_data: List of scraped text data for sentiment analysis
             
-            # Mock recommendation based on spread analysis
-            if yes_spread < no_spread and yes_bid > 30:
-                return BetRecommendation(
-                    ticker=ticker,
-                    side='yes',
-                    confidence=0.75,
-                    reasoning="Low spread and strong yes bid suggests bullish sentiment",
-                    market_title=market_data.get('title', 'Unknown'),
-                    current_price=yes_bid
-                )
-            elif no_spread < yes_spread and no_bid > 30:
-                return BetRecommendation(
-                    ticker=ticker,
-                    side='no',
-                    confidence=0.70,
-                    reasoning="Low spread and strong no bid suggests bearish sentiment",
-                    market_title=market_data.get('title', 'Unknown'),
-                    current_price=no_bid
-                )
+        Returns:
+            BetRecommendation if sentiment analysis suggests a bet, None otherwise
+        """
+        if not scraped_data:
+            print(f"No scraped data available for {ticker}, skipping sentiment analysis")
+            return None
         
-        return None
+        try:
+            # Get sentiment-based betting recommendation
+            sentiment_rec = sentiment_analyzer.get_betting_recommendation(
+                texts=scraped_data,
+                market_title=market_data.get('title', ticker)
+            )
+            
+            # Only proceed if we have a clear recommendation
+            if sentiment_rec['side'] is None:
+                print(f"Neutral sentiment for {ticker}, no betting recommendation")
+                return None
+            
+            # Get current market prices
+            yes_bid = market_data.get('yes_bid', 0)
+            no_bid = market_data.get('no_bid', 0)
+            
+            # Determine which price to use based on the recommended side
+            if sentiment_rec['side'] == 'yes' and yes_bid > 0:
+                current_price = yes_bid
+            elif sentiment_rec['side'] == 'no' and no_bid > 0:
+                current_price = no_bid
+            else:
+                print(f"No valid price available for {sentiment_rec['side']} side of {ticker}")
+                return None
+            
+            # Only recommend if confidence is above threshold and price is reasonable
+            confidence_threshold = 0.55  # Minimum confidence for betting
+            min_price = 10  # Minimum price threshold (10 cents)
+            
+            if sentiment_rec['confidence'] >= confidence_threshold and current_price >= min_price:
+                return BetRecommendation(
+                    ticker=ticker,
+                    side=sentiment_rec['side'],
+                    confidence=sentiment_rec['confidence'],
+                    reasoning=sentiment_rec['reasoning'],
+                    market_title=market_data.get('title', ticker),
+                    current_price=current_price
+                )
+            else:
+                print(f"Low confidence ({sentiment_rec['confidence']:.2%}) or price ({current_price}) for {ticker}, skipping")
+                return None
+                
+        except Exception as e:
+            print(f"Error analyzing sentiment for {ticker}: {str(e)}")
+            return None
     
     def display_betting_recommendations(self, recommendations: List[BetRecommendation]) -> None:
         """
@@ -218,19 +253,20 @@ class BettingSystem:
             print(f"Error placing bet: {str(e)}")
             return False
     
-    def process_betting_workflow(self, market_data: Dict[str, Dict]) -> None:
+    def process_betting_workflow(self, market_data: Dict[str, Dict], scraped_data: Dict[str, List[str]] = None) -> None:
         """
         Complete betting workflow: analyze markets, get recommendations, confirm, and place bets
         
         Args:
             market_data: Dictionary of market data from main.py
+            scraped_data: Dictionary mapping tickers to lists of scraped text data
         """
         print(f"\nSTARTING BETTING WORKFLOW")
         print("=" * 50)
         
         # Step 1: Analyze markets for betting opportunities
-        print("Analyzing markets for betting opportunities...")
-        recommendations = self.analyze_markets_for_betting(market_data)
+        print("Analyzing markets for betting opportunities using sentiment analysis...")
+        recommendations = self.analyze_markets_for_betting(market_data, scraped_data)
         
         # Step 2: Display recommendations
         self.display_betting_recommendations(recommendations)
@@ -291,24 +327,78 @@ class BettingSystem:
             print("Could not retrieve account balance")
 
 
-def integrate_sentiment_analysis(market_data: Dict[str, Dict], scraped_data: List[str]) -> List[BetRecommendation]:
+def integrate_sentiment_analysis(market_data: Dict[str, Dict], scraped_data: Dict[str, List[str]]) -> List[BetRecommendation]:
     """
-    Placeholder function for integrating sentiment analysis with scraped data
+    Integrate sentiment analysis with scraped data to generate betting recommendations
     
     Args:
         market_data: Dictionary of market data from main.py
-        scraped_data: List of scraped text data for sentiment analysis
+        scraped_data: Dictionary mapping tickers to lists of scraped text data
         
     Returns:
-        List of BetRecommendation objects
+        List of BetRecommendation objects based on sentiment analysis
     """
-    # This is where you'll integrate your sentiment analysis modules
-    # from src.basic_processing_and_sentiment_analysis.sentiment_classifier import analyze_sentiment
-    # from src.scikit_ensemble.tfidf_xgboost import predict_sentiment
+    print("Integrating sentiment analysis with scraped data...")
     
-    # For now, return empty list - this will be implemented when sentiment analysis is ready
-    print("Sentiment analysis integration placeholder - will be implemented with scraped data")
-    return []
+    recommendations = []
+    
+    for ticker, data in market_data.items():
+        # Get scraped data for this ticker
+        ticker_scraped_data = scraped_data.get(ticker, [])
+        
+        if not ticker_scraped_data:
+            print(f"No scraped data available for {ticker}, skipping")
+            continue
+        
+        try:
+            # Get sentiment-based betting recommendation
+            sentiment_rec = sentiment_analyzer.get_betting_recommendation(
+                texts=ticker_scraped_data,
+                market_title=data.get('title', ticker)
+            )
+            
+            # Only proceed if we have a clear recommendation
+            if sentiment_rec['side'] is None:
+                print(f"Neutral sentiment for {ticker}, no betting recommendation")
+                continue
+            
+            # Get current market prices
+            yes_bid = data.get('yes_bid', 0)
+            no_bid = data.get('no_bid', 0)
+            
+            # Determine which price to use based on the recommended side
+            if sentiment_rec['side'] == 'yes' and yes_bid > 0:
+                current_price = yes_bid
+            elif sentiment_rec['side'] == 'no' and no_bid > 0:
+                current_price = no_bid
+            else:
+                print(f"No valid price available for {sentiment_rec['side']} side of {ticker}")
+                continue
+            
+            # Only recommend if confidence is above threshold and price is reasonable
+            confidence_threshold = 0.55  # Minimum confidence for betting
+            min_price = 10  # Minimum price threshold (10 cents)
+            
+            if sentiment_rec['confidence'] >= confidence_threshold and current_price >= min_price:
+                recommendation = BetRecommendation(
+                    ticker=ticker,
+                    side=sentiment_rec['side'],
+                    confidence=sentiment_rec['confidence'],
+                    reasoning=sentiment_rec['reasoning'],
+                    market_title=data.get('title', ticker),
+                    current_price=current_price
+                )
+                recommendations.append(recommendation)
+                print(f"Generated recommendation for {ticker}: {sentiment_rec['side']} with {sentiment_rec['confidence']:.1%} confidence")
+            else:
+                print(f"Low confidence ({sentiment_rec['confidence']:.2%}) or price ({current_price}) for {ticker}, skipping")
+                
+        except Exception as e:
+            print(f"Error analyzing sentiment for {ticker}: {str(e)}")
+            continue
+    
+    print(f"Generated {len(recommendations)} betting recommendations from sentiment analysis")
+    return recommendations
 
 
 if __name__ == "__main__":

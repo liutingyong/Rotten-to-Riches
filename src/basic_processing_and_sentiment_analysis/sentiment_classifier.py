@@ -105,3 +105,153 @@ if percentage_pos > 0.6:
     print("Overall Sentiment: Positive")
 elif percentage_pos < 0.4:
     print("Overall Sentiment: Negative")
+
+
+class SentimentAnalyzer:
+    """
+    A class for analyzing sentiment of text data using NLTK's Naive Bayes classifier
+    """
+    
+    def __init__(self):
+        """Initialize the sentiment analyzer and train the classifier"""
+        self.classifier = None
+        self._train_classifier()
+    
+    def _train_classifier(self):
+        """Train the Naive Bayes classifier on movie reviews data"""
+        print("Training sentiment classifier...")
+        
+        # Load and prepare training data
+        docs = []
+        for category in movie_reviews.categories():
+            for fileid in movie_reviews.fileids(category):
+                docs.append((list(movie_reviews.words(fileid)), category))
+        
+        random.shuffle(docs)
+        featuresets = []
+        for (words, label) in docs:
+            try:
+                featuresets.append((extract_features(preprocess_text("".join(words))), label))
+            except Exception as e:
+                print(f"Error processing {words}: {e}")
+        
+        # Split into training and testing sets
+        training_set = featuresets[:1500]
+        testing_set = featuresets[1500:]
+        
+        # Train the classifier
+        self.classifier = NaiveBayesClassifier.train(training_set)
+        
+        # Print accuracy
+        accuracy = nltk.classify.accuracy(self.classifier, testing_set)
+        print(f"Sentiment classifier trained with {accuracy:.2%} accuracy")
+    
+    def analyze_sentiment(self, text: str) -> dict:
+        """
+        Analyze sentiment of a single text
+        
+        Args:
+            text: Text to analyze
+            
+        Returns:
+            Dictionary with sentiment analysis results
+        """
+        if not self.classifier:
+            raise ValueError("Classifier not trained")
+        
+        # Preprocess and extract features
+        features = extract_features(preprocess_text(text))
+        
+        # Get classification
+        label = self.classifier.classify(features)
+        
+        # Get probability distribution
+        prob_dist = self.classifier.prob_classify(features)
+        
+        return {
+            'label': label,
+            'confidence': prob_dist.prob(label),
+            'positive_prob': prob_dist.prob('pos'),
+            'negative_prob': prob_dist.prob('neg')
+        }
+    
+    def analyze_multiple_texts(self, texts: list) -> dict:
+        """
+        Analyze sentiment of multiple texts and return aggregate results
+        
+        Args:
+            texts: List of texts to analyze
+            
+        Returns:
+            Dictionary with aggregate sentiment analysis
+        """
+        if not texts:
+            return {'overall_sentiment': 'neutral', 'confidence': 0.0, 'positive_percentage': 0.5}
+        
+        results = []
+        positive_count = 0
+        
+        for text in texts:
+            result = self.analyze_sentiment(text)
+            results.append(result)
+            if result['label'] == 'pos':
+                positive_count += 1
+        
+        positive_percentage = positive_count / len(texts)
+        avg_confidence = sum(r['confidence'] for r in results) / len(results)
+        
+        # Determine overall sentiment
+        if positive_percentage > 0.6:
+            overall_sentiment = 'positive'
+        elif positive_percentage < 0.4:
+            overall_sentiment = 'negative'
+        else:
+            overall_sentiment = 'neutral'
+        
+        return {
+            'overall_sentiment': overall_sentiment,
+            'confidence': avg_confidence,
+            'positive_percentage': positive_percentage,
+            'individual_results': results,
+            'total_texts': len(texts)
+        }
+    
+    def get_betting_recommendation(self, texts: list, market_title: str = "") -> dict:
+        """
+        Get a betting recommendation based on sentiment analysis
+        
+        Args:
+            texts: List of texts to analyze
+            market_title: Title of the market for context
+            
+        Returns:
+            Dictionary with betting recommendation
+        """
+        sentiment_results = self.analyze_multiple_texts(texts)
+        
+        # Determine betting side based on sentiment
+        if sentiment_results['overall_sentiment'] == 'positive':
+            side = 'yes'
+            reasoning = f"Positive sentiment ({sentiment_results['positive_percentage']:.1%} positive) suggests bullish outlook"
+        elif sentiment_results['overall_sentiment'] == 'negative':
+            side = 'no'
+            reasoning = f"Negative sentiment ({sentiment_results['positive_percentage']:.1%} positive) suggests bearish outlook"
+        else:
+            side = None  # No clear recommendation for neutral sentiment
+            reasoning = f"Neutral sentiment ({sentiment_results['positive_percentage']:.1%} positive) - no clear betting direction"
+        
+        # Calculate confidence based on both sentiment strength and classifier confidence
+        sentiment_strength = abs(sentiment_results['positive_percentage'] - 0.5) * 2  # 0 to 1 scale
+        confidence = (sentiment_strength + sentiment_results['confidence']) / 2
+        
+        return {
+            'side': side,
+            'confidence': confidence,
+            'reasoning': reasoning,
+            'sentiment_data': sentiment_results,
+            'market_title': market_title
+        }
+
+
+# Create a global instance for easy import
+sentiment_analyzer = SentimentAnalyzer()
