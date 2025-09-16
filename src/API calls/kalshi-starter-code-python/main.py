@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from cryptography.hazmat.primitives import serialization
 from clients import KalshiHttpClient, Environment
 from betting_system import BettingSystem
+from pathlib import Path
 
 def extract_ticker_from_url(url_or_ticker):
     """
@@ -134,6 +135,61 @@ def analyze_multiple_markets(client, market_tickers):
     
     return all_market_data
 
+def load_scraped_data():
+    """
+    Load scraped data from the webscraping/scraped_data directory
+    Returns a dictionary mapping tickers to lists of scraped text data
+    """
+    scraped_data = {}
+    
+    # Path to scraped data directory
+    scraped_data_dir = Path("../../webscraping/scraped_data")
+    
+    if not scraped_data_dir.exists():
+        print("Warning: Scraped data directory not found")
+        return {}
+    
+    # Load all .txt files from scraped data directory
+    for filename in scraped_data_dir.glob("*.txt"):
+        try:
+            with open(filename, "r", encoding="utf-8") as file:
+                content = file.read()
+                
+                # Extract title from the content (first line after "Title:")
+                lines = content.split('\n')
+                title = ""
+                for line in lines:
+                    if line.startswith("Title:"):
+                        title = line.replace("Title:", "").strip()
+                        break
+                
+                # Map scraped data based on content analysis
+                # Look for keywords that might match market tickers
+                content_lower = content.lower()
+                
+                # Check for Tron-related content
+                if any(keyword in content_lower for keyword in ['tron', 'ares', 'disney', 'lightcycle']):
+                    # Map to the specific ticker we're analyzing (KXRTTRONARES)
+                    specific_ticker = 'KXRTTRONARES'
+                    if specific_ticker not in scraped_data:
+                        scraped_data[specific_ticker] = []
+                    scraped_data[specific_ticker].append(content)
+                else:
+                    # Add generic mapping for non-Tron content only
+                    generic_key = "GENERIC"
+                    if generic_key not in scraped_data:
+                        scraped_data[generic_key] = []
+                    scraped_data[generic_key].append(content)
+                    
+        except Exception as e:
+            print(f"Error loading scraped data from {filename.name}: {e}")
+    
+    print(f"Loaded scraped data for {len(scraped_data)} categories")
+    for key, data_list in scraped_data.items():
+        print(f"  {key}: {len(data_list)} articles")
+    
+    return scraped_data
+
 def main():
     """
     Main function to analyze Kalshi markets
@@ -259,11 +315,18 @@ def main():
         # Initialize betting system
         betting_system = BettingSystem(client)
         
+        # Test API connection first
+        if not betting_system.test_api_connection():
+            print("API connection test failed. Please check your credentials and network connection.")
+            return
+        
         # Display account balance
         betting_system.display_account_balance()
         
-        # Process betting workflow
-        betting_system.process_betting_workflow(all_market_data)
+        # Process betting workflow with real scraped data
+        scraped_data = load_scraped_data()
+        
+        betting_system.process_betting_workflow(all_market_data, scraped_data)
         
     else:
         print(f"No markets found for event {EVENT_TICKER}")

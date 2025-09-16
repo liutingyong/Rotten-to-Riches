@@ -7,11 +7,11 @@ from pathlib import Path
 #should we discard some stopwords?
 
 #punkt is a pretrained sentence/word tokenizer, splits better (knows abbreviations, punctuation, etc.)
-nltk.download('punkt')
+#nltk.download('punkt')
 #stopwords are irrelevant words that don't contribute to meaning but important for grammar like i, me, the, etc.
-nltk.download('stopwords')
+#nltk.download('stopwords')
 #synonym/antonym 
-nltk.download('wordnet') #wordnet is lexical database for english
+#nltk.download('wordnet') #wordnet is lexical database for english
 
 def preprocess_text(text):
     # Tokenize the text into words
@@ -47,7 +47,7 @@ def extract_features(words):
     return {word: True for word in words}
 
 from nltk.corpus import movie_reviews
-nltk.download('movie_reviews')
+#nltk.download('movie_reviews')
 import random
 
 #categories are positiev or negative
@@ -99,12 +99,17 @@ for filename in directory.glob("*.txt"):
 #we can improve accuracy by using more data, better preprocessing, or more advanced models
 
 #change our current data to be more relevant to our use case so we can make actual bets
-percentage_pos = classifications.count(1) / len(classifications)
-print(f"Percentage of positive sentiment: {percentage_pos:.2%}")
-if percentage_pos > 0.6:
-    print("Overall Sentiment: Positive")
-elif percentage_pos < 0.4:
-    print("Overall Sentiment: Negative")
+if len(classifications) == 0:
+    print("No files were successfully processed. Check if the scraped_data directory exists and contains .txt files.")
+else:
+    percentage_pos = classifications.count(1) / len(classifications)
+    print(f"Percentage of positive sentiment: {percentage_pos:.2%}")
+    if percentage_pos > 0.6:
+        print("Overall Sentiment: Positive")
+    elif percentage_pos < 0.4:
+        print("Overall Sentiment: Negative")
+    else:
+        print("Overall Sentiment: Neutral")
 
 
 class SentimentAnalyzer:
@@ -168,11 +173,17 @@ class SentimentAnalyzer:
         # Get probability distribution
         prob_dist = self.classifier.prob_classify(features)
         
+        # Calculate confidence as the difference between positive and negative probabilities
+        # This gives us a measure of how decisive the classification is
+        positive_prob = prob_dist.prob('pos')
+        negative_prob = prob_dist.prob('neg')
+        confidence = abs(positive_prob - negative_prob)
+        
         return {
             'label': label,
-            'confidence': prob_dist.prob(label),
-            'positive_prob': prob_dist.prob('pos'),
-            'negative_prob': prob_dist.prob('neg')
+            'confidence': confidence,
+            'positive_prob': positive_prob,
+            'negative_prob': negative_prob
         }
     
     def analyze_multiple_texts(self, texts: list) -> dict:
@@ -197,13 +208,21 @@ class SentimentAnalyzer:
             if result['label'] == 'pos':
                 positive_count += 1
         
-        positive_percentage = positive_count / len(texts)
-        avg_confidence = sum(r['confidence'] for r in results) / len(results)
+        # Avoid division by zero
+        if len(texts) > 0:
+            positive_percentage = positive_count / len(texts)
+        else:
+            positive_percentage = 0.5  # Default to neutral
         
-        # Determine overall sentiment
-        if positive_percentage > 0.6:
+        if len(results) > 0:
+            avg_confidence = sum(r['confidence'] for r in results) / len(results)
+        else:
+            avg_confidence = 0.0
+        
+        # Determine overall sentiment (more sensitive thresholds)
+        if positive_percentage > 0.55:  # Lowered from 0.6
             overall_sentiment = 'positive'
-        elif positive_percentage < 0.4:
+        elif positive_percentage < 0.45:  # Raised from 0.4
             overall_sentiment = 'negative'
         else:
             overall_sentiment = 'neutral'

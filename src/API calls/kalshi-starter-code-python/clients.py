@@ -212,6 +212,82 @@ class KalshiHttpClient(KalshiBaseClient):
         if depth is not None:
             params['depth'] = depth
         return self.get(f"{self.markets_url}/{ticker}/orderbook", params=params)
+    
+    def create_order(
+        self,
+        ticker: str,
+        side: str,
+        amount: int,
+        price: int,
+        order_type: str = "limit"
+    ) -> Dict[str, Any]:
+        """Creates a new order on Kalshi.
+        
+        Args:
+            ticker: Market ticker (e.g., "KXTRON-50")
+            side: "yes" or "no"
+            amount: Number of shares
+            price: Price in cents
+            order_type: "limit" or "market"
+            
+        Returns:
+            Order response from API
+        """
+        # Kalshi API expects specific order format
+        order_data = {
+            "ticker": ticker,
+            "action": "buy",  # Required field
+            "side": side,
+            "count": amount,  # Use 'count' instead of 'amount'
+            "type": order_type,  # Use 'type' instead of 'order_type'
+            "yes_price": price if side == "yes" else None,
+            "no_price": price if side == "no" else None,
+            "client_order_id": f"order_{int(time.time())}"  # Add unique client order ID
+        }
+        
+        try:
+            # Try different possible Kalshi API endpoints
+            endpoints_to_try = [
+                "/trade-api/v2/portfolio/orders",
+                "/portfolio/orders",
+                "/trade-api/v2/orders",
+                "/trading/orders",
+                "/orders",
+                "/v1/orders", 
+                "/api/orders"
+            ]
+            
+            for endpoint in endpoints_to_try:
+                try:
+                    print(f"Trying endpoint: {endpoint}")
+                    response = self.post(endpoint, order_data)
+                    if response:
+                        print(f"Success with endpoint: {endpoint}")
+                        return response
+                except Exception as e:
+                    print(f"Endpoint {endpoint} failed: {str(e)}")
+                    continue
+            
+            # If all endpoints fail, try a different order format
+            print("Trying alternative order format...")
+            alt_order_data = {
+                "ticker": ticker,
+                "action": "buy",
+                "side": side,
+                "count": amount,
+                "type": order_type,
+                "yes_price": price if side == "yes" else None,
+                "no_price": price if side == "no" else None,
+                "client_order_id": f"alt_order_{int(time.time())}"
+            }
+            
+            response = self.post("/trade-api/v2/portfolio/orders", alt_order_data)
+            return response
+            
+        except Exception as e:
+            print(f"All order creation attempts failed: {str(e)}")
+            print(f"Original order data: {order_data}")
+            return None
 
 class KalshiWebSocketClient(KalshiBaseClient):
     """Client for handling WebSocket connections to the Kalshi API."""
